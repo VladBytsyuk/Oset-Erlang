@@ -1,0 +1,228 @@
+-module(oset_test).
+-compile(export_all).
+-include_lib("eunit/include/eunit.hrl").
+
+new_test() -> 
+	?assert(oset:new() == {nil, black, nil, nil}).
+	
+from_list_test() ->
+	OSetEmpty = {nil, black, nil, nil},
+	OSet2 = {2, 
+	 		 black, 
+	 		 {nil, black, nil, nil}, 
+	 		 {nil, black, nil, nil}},
+	OSet123 = {2, 
+	 		   black,
+ 			   {1,black,{nil,black,nil,nil},{nil,black,nil,nil}},
+ 			   {3,black,{nil,black,nil,nil},{nil,black,nil,nil}}},
+	[?assert(oset:from_list([]) == OSetEmpty),
+	 ?assert(oset:from_list([2]) == OSet2),
+	 ?assert(oset:from_list([1, 2, 3]) == OSet123)
+	].
+
+to_list_test() ->
+	OSetEmpty = {nil, black, nil, nil},
+	OSet2 = {2, 
+	 		 black, 
+	 		 {nil, black, nil, nil}, 
+	 		 {nil, black, nil, nil}},
+	OSet123 = {2, 
+	 		   black,
+ 			   {1,black,{nil,black,nil,nil},{nil,black,nil,nil}},
+ 			   {3,black,{nil,black,nil,nil},{nil,black,nil,nil}}},
+	[?assert(oset:to_list(OSetEmpty) == []),
+	 ?assert(oset:to_list(OSet2) == [2]),
+	 ?assert(oset:to_list(OSet123) == [1, 2, 3])
+	].
+	
+add_element_test_() ->
+	OSetEmpty = {nil, black, nil, nil},
+	OSet1 = {1, 
+	 		 black, 
+	 		 {nil, black, nil, nil}, 
+	 		 {nil, black, nil, nil}},
+	OSet01 = {1, 
+	 		  black, 
+	 		  {0, red, {nil, black, nil, nil}, {nil, black, nil, nil}}, 
+	 		  {nil, black, nil, nil}},
+	OSet012 = {1, 
+	           black, 
+	           {0, red, {nil, black, nil, nil}, {nil, black, nil, nil}}, 
+	 	       {2, red, {nil, black, nil, nil}, {nil, black, nil, nil}}},
+	OSet0123 = {2, 
+	 	      	black, 
+	 	      	{1, black, {0, red, {nil, black, nil, nil},{nil, black, nil, nil}}, {nil, black, nil, nil}},
+	 	      	{3, black, {nil, black, nil, nil}, {nil, black, nil, nil}}},
+	[?_assert(oset:add_element(1, OSetEmpty) == OSet1),
+	 ?_assert(oset:add_element(0, OSet1) == OSet01),
+	 ?_assert(oset:add_element(2, OSet01) == OSet012),
+	 ?_assert(oset:add_element(3, OSet012) == OSet0123)].
+
+del_element_test_() ->
+	OSetEmpty = {nil, black, nil, nil},
+	OSet4 = {4, 
+	 		 black, 
+	 		 {nil, black, nil, nil}, 
+	 		 {nil, black, nil, nil}},
+	OSet34 = {4, 
+	 		  black, 
+              {3, red, {nil, black, nil, nil}, {nil, black, nil, nil}}, 
+	 		  {nil, black, nil, nil}},
+	OSet45 = {4, 
+	 		  black, 
+	 		  {nil, black, nil, nil}, 
+	 		  {5, red, {nil, black, nil, nil}, {nil, black, nil, nil}}},
+	OSet35 = {3, 
+	 		  black, 
+	 		  {nil, black, nil, nil}, 
+	 		  {5, red, {nil, black, nil, nil}, {nil, black, nil, nil}}},
+	OSet345 = {4, 
+	 		   black, 
+	 		   {3, red, {nil, black, nil, nil}, {nil, black, nil, nil}}, 
+	 		   {5, red, {nil, black, nil, nil}, {nil, black, nil, nil}}},
+	[?_assert(oset:del_element(4, OSetEmpty) == OSetEmpty),
+	 ?_assert(oset:del_element(4, OSet4) == OSetEmpty),
+	 ?_assert(oset:del_element(3, OSet4) == OSet4),
+	 ?_assert(oset:del_element(3, OSet34) == OSet4),
+	 ?_assert(oset:del_element(5, OSet45) == OSet4),
+	 ?_assert(oset:del_element(4, OSet345) == OSet35)].
+	
+size_test() ->
+	OSetEmpty = oset:from_list([]),
+	OSet2 = oset:from_list([2]),
+	OSet01 = oset:from_list([0, 1]),
+	OSet12 = oset:from_list([1, 2]),
+	OSet123 = oset:from_list([1, 2, 3]),
+	[?assert(oset:size(OSetEmpty) == 0),
+	 ?assert(oset:size(OSet2) == 1),
+	 ?assert(oset:size(OSet01) == 2),
+	 ?assert(oset:size(OSet12) == 2),
+	 ?assert(oset:size(OSet123) == 3)].
+
+union_test() ->
+	OSetEmpty = oset:from_list([]),
+	OSet1 = oset:from_list([1]),
+	OSet2 = oset:from_list([2]),
+	OSet3 = oset:from_list([3]),
+	OSet12 = oset:from_list([1, 2]),
+	OSet123 = oset:from_list([1, 2, 3]),
+	[?assert(oset:union(OSetEmpty, OSetEmpty) == OSetEmpty),
+	 ?assert(oset:union(OSetEmpty, OSet1) == OSet1),
+	 ?assert(oset:union(OSet1, OSetEmpty) == OSet1),
+	 ?assert(oset:union(OSet1, OSet1) == OSet1),
+	 ?assert(oset:union(OSet1, OSet2) == OSet12),
+	 ?assert(oset:union([OSet1, OSet2, OSet3]) == OSet123)].
+	 
+intersection_test() ->
+	OSetEmpty = oset:from_list([]),
+	OSet1 = oset:from_list([1]),
+	OSet2 = oset:from_list([2]),
+	OSet3 = oset:from_list([3]),
+	OSet12 = oset:from_list([1, 2]),
+	OSet123 = oset:from_list([1, 2, 3]),
+	[?assert(oset:intersection(OSetEmpty, OSetEmpty) == OSetEmpty),
+	 ?assert(oset:intersection(OSetEmpty, OSet1) == OSetEmpty),
+	 ?assert(oset:intersection(OSet1, OSetEmpty) == OSetEmpty),
+	 ?assert(oset:intersection(OSet1, OSet1) == OSet1),
+	 ?assert(oset:intersection(OSet1, OSet2) == OSetEmpty),
+	 ?assert(oset:intersection(OSet12, OSet2) == OSet2),
+	 ?assert(oset:intersection(OSet123, OSet1) == OSet1),
+	 ?assert(oset:intersection(OSet123, OSet2) == OSet2),
+	 ?assert(oset:intersection(OSet123, OSet3) == OSet3),
+	 ?assert(oset:intersection(OSet123, OSet12) == OSet12),
+	 ?assert(oset:intersection(OSet1, OSet123) == OSet1),
+	 ?assert(oset:intersection(OSet2, OSet123) == OSet2),
+	 ?assert(oset:intersection(OSet3, OSet123) == OSet3)].
+	 
+subtract_test() ->
+	OSetEmpty = oset:from_list([]),
+	OSet1 = oset:from_list([1]),
+	OSet2 = oset:from_list([2]),
+	OSet3 = oset:from_list([3]),
+	OSet12 = oset:from_list([1, 2]),
+	OSet123 = oset:from_list([1, 2, 3]),
+	[?assert(oset:subtract(OSetEmpty, OSetEmpty) == OSetEmpty),
+	 ?assert(oset:subtract(OSetEmpty, OSet1) == OSetEmpty),
+	 ?assert(oset:subtract(OSet1, OSetEmpty) == OSet1),
+	 ?assert(oset:subtract(OSet12, OSet1) == OSet2),
+	 ?assert(oset:subtract(OSet12, OSet2) == OSet1),
+	 ?assert(oset:subtract(OSet12, OSetEmpty) == OSet12),
+	 ?assert(oset:subtract(OSet123, OSet12) == OSet3)].
+	 
+is_subset_test() ->
+	OSetEmpty = oset:from_list([]),
+	OSet1 = oset:from_list([1]),
+	OSet2 = oset:from_list([2]),
+	OSet3 = oset:from_list([3]),
+	OSet12 = oset:from_list([1, 2]),
+	OSet123 = oset:from_list([1, 2, 3]),
+	[?assert(oset:is_subset(OSetEmpty, OSetEmpty) == true),
+	 ?assert(oset:is_subset(OSet1, OSet12) == true),
+	 ?assert(oset:is_subset(OSet2, OSet12) == true),
+	 ?assert(oset:is_subset(OSet1, OSet123) == true),
+	 ?assert(oset:is_subset(OSet2, OSet123) == true),
+	 ?assert(oset:is_subset(OSet3, OSet123) == true),
+	 ?assert(oset:is_subset(OSet12, OSet123) == true),
+	 ?assert(oset:is_subset(OSet123, OSet123) == true),
+	 ?assert(oset:is_subset(OSet1, OSet2) == false),
+	 ?assert(oset:is_subset(OSet3, OSet12) == false),
+	 ?assert(oset:is_subset(OSet2, OSet1) == false),
+	 ?assert(oset:is_subset(OSet123, OSet2) == false),
+	 ?assert(oset:is_subset(OSet12, OSetEmpty) == false),
+	 ?assert(oset:is_subset(OSet3, OSetEmpty) == false)].
+	 
+is_disjoint_test() ->
+	OSetEmpty = oset:from_list([]),
+	OSet1 = oset:from_list([1]),
+	OSet2 = oset:from_list([2]),
+	OSet3 = oset:from_list([3]),
+	OSet12 = oset:from_list([1, 2]),
+	OSet123 = oset:from_list([1, 2, 3]),
+	[?assert(oset:is_disjoint(OSetEmpty, OSetEmpty) == true),
+	 ?assert(oset:is_disjoint(OSet1, OSetEmpty) == true),
+	 ?assert(oset:is_disjoint(OSetEmpty, OSet1) == true),
+	 ?assert(oset:is_disjoint(OSet1, OSet1) == false),
+	 ?assert(oset:is_disjoint(OSet1, OSet2) == true),
+	 ?assert(oset:is_disjoint(OSet2, OSet1) == true),
+	 ?assert(oset:is_disjoint(OSet12, OSet1) == false),
+	 ?assert(oset:is_disjoint(OSet1, OSet12) == false),
+	 ?assert(oset:is_disjoint(OSet12, OSet123) == false),
+	 ?assert(oset:is_disjoint(OSet3, OSet123) == false),
+	 ?assert(oset:is_disjoint(OSet3, OSet12) == true)].
+	 
+fold_test() ->
+	OSetEmpty = oset:from_list([]),
+	OSet1 = oset:from_list([1]),
+	OSet2 = oset:from_list([2]),
+	OSet3 = oset:from_list([3]),
+	OSet12 = oset:from_list([1, 2]),
+	OSet123 = oset:from_list([1, 2, 3]),
+	[?assert(oset:fold(fun(X, Y) -> X + Y end, 0, OSetEmpty) == 0),
+	 ?assert(oset:fold(fun(X, Y) -> X + Y end, 0, OSet1) == 1),
+	 ?assert(oset:fold(fun(X, Y) -> X + Y end, 0, OSet2) == 2),
+	 ?assert(oset:fold(fun(X, Y) -> X + Y end, 0, OSet3) == 3),
+	 ?assert(oset:fold(fun(X, Y) -> X + Y end, 0, OSet12) == 3),
+	 ?assert(oset:fold(fun(X, Y) -> X + Y end, 0, OSet123) == 6),
+	 ?assert(oset:fold(fun(X, Y) -> X * Y end, 1, OSetEmpty) == 1),
+	 ?assert(oset:fold(fun(X, Y) -> X * Y end, 1, OSet1) == 1),
+	 ?assert(oset:fold(fun(X, Y) -> X * Y end, 1, OSet2) == 2),
+	 ?assert(oset:fold(fun(X, Y) -> X * Y end, 1, OSet3) == 3),
+	 ?assert(oset:fold(fun(X, Y) -> X * Y end, 1, OSet12) == 2),
+	 ?assert(oset:fold(fun(X, Y) -> X * Y end, 1, OSet123) == 6)].
+	 
+filter_test() -> 
+	OSetEmpty = oset:from_list([]),
+	OSet1 = oset:from_list([1]),
+	OSet2 = oset:from_list([2]),
+	OSet3 = oset:from_list([3]),
+	OSet13 = oset:from_list([1, 3]),
+	OSet123 = oset:from_list([1, 2, 3]),
+	[?assert(oset:filter(fun(X) -> X >= 0 end, OSetEmpty) == OSetEmpty),
+	 ?assert(oset:filter(fun(X) -> X >= 2 end, OSet1) == OSetEmpty),
+	 ?assert(oset:filter(fun(X) -> X >= 2 end, OSet2) == OSet2),
+	 ?assert(oset:filter(fun(X) -> X rem 2 == 0 end, OSet123) == OSet2),
+	 ?assert(oset:filter(fun(X) -> X rem 2 == 1 end, OSet123) == OSet13),
+	 ?assert(oset:filter(fun(X) -> X == 2 end, OSet123) == OSet2),
+	 ?assert(oset:filter(fun(X) -> X == 2 end, OSet2) == OSet2),
+	 ?assert(oset:filter(fun(X) -> X == 2 end, OSet3) == OSetEmpty),
+	 ?assert(oset:filter(fun(X) -> X > 19 end, OSet1) == OSetEmpty)].
