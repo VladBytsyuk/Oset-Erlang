@@ -36,16 +36,11 @@ is_set(_) ->
 % Количество элементов в упорядоченном множестве
 % size(OSet) -> int().	
 	
-size(OSet) ->
-	size(OSet, 0).
+size({nil, black, nil, nil}) ->
+	0;	
 	
-size({nil, black, nil, nil}, Acc) ->
-	Acc;	
-	
-size(OSet, Acc) ->
-	OSetLeft = min(OSet),
-	OSetNew = del_element(OSetLeft, OSet),
-	size(OSetNew, Acc + 1).
+size({_, _, Left, Right}) ->
+	oset:size(Left) + 1 + oset:size(Right).
 
 
 
@@ -54,27 +49,17 @@ size(OSet, Acc) ->
 
 to_list({nil, black, nil, nil}) ->
 	[];
+
+to_list({Key, _, Left, Right}) ->
+	to_list(Left) ++ [Key] ++ to_list(Right).
 	
-to_list(OSet) ->
-	OSetMin = min(OSet),
-	OSetNew = del_element(OSetMin, OSet),
-	[OSetMin | to_list(OSetNew)].
-	
-	
+
 	
 % Перевод списка в упорядоченное множество
 % from_list([Elem]) -> OSet.
 
 from_list(List) ->
-	OSetEmpty = new(),
-	from_list(List, OSetEmpty).
-	
-from_list([], OSet) ->
-	OSet;	
-	
-from_list([H | T], OSet) ->
-	OSetNew = add_element(H, OSet),
-	from_list(T, OSetNew).
+	lists:foldl(fun(Elem, OSet) -> add_element(Elem, OSet) end, new(), List).
 
 
 
@@ -105,16 +90,9 @@ min({_, _, Left, _}) ->
 
 union(OSetA, {nil, black, nil, nil}) ->
 	OSetA;
-
-union({nil, black, nil, nil}, OSetB) ->
-	OSetB;
-
-union(OSetA, OSetB)	->
-	OSetBLeft = min(OSetB),
-	OSetANew = add_element(OSetBLeft, OSetA),
-	OSetBNew = del_element(OSetBLeft, OSetB),
-	union(OSetANew, OSetBNew).	
-
+	
+union(OSetA, {Key, _, Left, Right}) ->
+	union(union(add_element(Key, OSetA), Left), Right).
 
 % union([OSet]) -> OSet.
 
@@ -178,51 +156,41 @@ subtract(OSetA, OSetB) ->
 
 
 
-
 % Является ли одно упорядоченное множество подмножеством другого
 % is_subset(OSetA, OSetB) -> boolean().
-
-is_subset({nil, black, nil, nil}, _) ->
-	true;
-
-is_subset(OSetA, OSetB) ->
-	OSetALeft = min(OSetA),
-	IsElem = is_element(OSetALeft, OSetB),
-	if
-		IsElem =:= true  -> OSetANew = del_element(OSetALeft, OSetA),
-							is_subset(OSetANew, OSetB);
-		
-		IsElem =:= false -> false
-	end.
 	
-
+is_subset({nil, black, nil, nil}, _) ->
+	true;	
+	
+is_subset({Key, _, Left, Right}, OSetB) ->
+	IsElem = is_element(Key, OSetB),
+	if
+		IsElem  -> is_subset(Left, OSetB) and is_subset(Right, OSetB);
+		true 	-> false
+	end.
 	
 % Являются ли упорядоченные множества непересекающимися
 % is_disjoint(OSetA, OSetB) -> boolean().
 
-is_disjoint({nil, black, nil, nil}, _) ->
+is_disjoint(_, {nil, black, nil, nil}) ->
 	true;	
 
-is_disjoint(OSetA, OSetB) ->
-	OSetALeft = min(OSetA),
-	IsElem = is_element(OSetALeft, OSetB),
-	if 
-		IsElem =:= true  -> false;
-		
-		IsElem =:= false -> OSetANew = del_element(OSetALeft, OSetA),
-							is_disjoint(OSetANew, OSetB)
+is_disjoint(OSetA, {Key, _, Left, Right}) ->
+	IsElem = is_element(Key, OSetA),
+	if
+		IsElem	-> false;
+		true	-> is_disjoint(OSetA, Left) and is_disjoint(OSetA, Right)
 	end.
-
-
 	
 % Применение функции к каждому элементу упорядоченного множества
 % fold(Fun, Acc, OSet) -> Acc. 
 
-fold(Fun, Acc, OSet) ->
-	OSetList = to_list(OSet),
-	lists:foldl(Fun, Acc, OSetList).
+fold(_, Acc, {nil, black, nil, nil}) ->
+	Acc;	
 	
-
+fold(Fun, Acc, {Key, _, Left, Right}) ->
+	Fun(Fun(Key, fold(Fun, Acc, Left)), fold(Fun, Acc, Right)).
+	
 	
 % Фильтрует упорядоченное множество с помощью предиката
 % filter(Fun, OSet) -> OSet.
@@ -230,9 +198,7 @@ fold(Fun, Acc, OSet) ->
 filter(Pred, OSet) ->
 	OSetList = to_list(OSet),
 	FilteredList = lists:filter(Pred, OSetList),
-	from_list(FilteredList).	
-
-
+	from_list(FilteredList).					
 
 % Принадлежит ли элемент упорядоченному множеству
 % is_element(Elem, OSet) -> boolean().
